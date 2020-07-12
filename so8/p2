@@ -1,0 +1,38 @@
+#pragma once
+#pragma once
+#include <vector>
+#include<cmath>
+#include <string>
+#include <ncurses.h>
+#include <thread>
+#include <mutex>
+#include <unistd.h>
+#include "factory.h"
+#include "sawmill.h"
+#include "lumberjack.h"
+#include "worker.h"
+#include "part.h"
+#include "map.h"
+
+class Wiz
+{
+public:
+	std::mutex *mtx;
+	
+	std::vector<Factory> factories 
+	//Sawmill* currentSW;
+	//Factory* currentFactory;
+
+
+//	WINDOW* mapW; //okno mapy
+	std::vector<WINDOW*> facW; // okna fabryk
+	const double angle = 2*M_PI/360; 
+
+	Wiz(std::vector<Truck> &trucks,std::vector<Factory> &factories, Sawmill& sawmill); //inicjalizacja okna 
+	void showMap(Map& map); //rysowanie mapy
+	void showFactory(Factory& f); //rysowanie fabryki 
+	void showMill(Sawmill& sw);
+	void keyListen(bool isRunning); //do watku sluchajacego ???
+	~Wiz(); 
+};
+

@@ -1,0 +1,13 @@
+# Dane jest drzewo katalogowe D i dwa pliki zwykłe P1 i P2 (argumenty skryptu).
+# 1. W D dla każdego katalogu należy wyświetlić jego nazwę (ostatni człon)
+ # i liczbę ukrytych plików, zaś dla każdego pliku zwykłego należy wyświetlić jego nazwę
+ # (ostatni człon) i numer i-węzła podzielony przez 100
+ # (bez znaczenia czy dzielenie jest całkowitoliczbowe lub czy zmiennoprzecinkowe). (4 pt)
+# 2. Wyniki z punktu 1 należy dodatkowo posortować (przed wyświetleniem) 
+# wg nazwy pliku i zapisać do P1. (2 pt)
+# 3. Należy wypisać nazwy wszystkich plików dołączonych do P2 dyrektywą 
+# #include znaną z języków C/C++. Można założyć, że dyektywa #include 
+# zajmuje cały wiersz (tzn. linia zawiera co najwyżej jedną taką dyrektywę i 
+# jeśli ją zawiera, to nie zawiera nic innego). Należy pamiętać, że istnieją dwa 
+# sposoby dołączania plików (wersja <file> oraz wersja "file"). 
+# Po słowie include może być opcjonalnie spacja. (3 pt)

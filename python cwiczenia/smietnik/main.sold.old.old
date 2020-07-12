@@ -1,0 +1,224 @@
+#Calling convention: rax , rdi , rsi, rdx 
+.section .data 
+.EQU SYSREAD, 0 
+.EQU SYSWRITE, 1 
+.EQU SYSEXIT, 60 
+.EQU STDOUT, 1 
+ 
+.EQU STDIN, 0 
+ 
+.EQU EXIT_SUCCESS, 0
+
+WELCOME_MSG: .asciz "%s"
+TAR_PROTOTYPE: .ascii "tar -cvf a.out "
+
+.section .bss
+	.lcomm LOC, 128
+.section .text 
+
+# Wywołanie TARa do wygenerowania archiwumz z lokalizacji źródłowej w RDI 
+#
+# C: void GenerateArhive(char* szSource)
+# MODYFIKUJE REJESTRY: RSI, RAX, RDI, RSI  
+
+.type GenerateTAR, @function
+GenerateTAR: 
+	push %rbp 
+	mov %rsp, %rbp 
+	mov %rdi, -16(%rbp)
+	sub $16, %rsp 	
+
+	call strlen 
+	
+	add $16, %rax
+	call malloc 
+	
+	mov %rax, %rdi   
+	mov $TAR_PROTOTYPE, %rsi 
+	call strcpy
+	
+
+	mov %rax, %rdi 
+	movq -16(%rbp), %rsi 
+	call strcat 
+
+	mov %rax, -16(%rbp)
+	mov %rax, %rdi 
+	call system 
+	mov -16(%rbp), %rdi 
+	call free
+
+	mov %rbp, %rsp 
+	pop %rbp 
+	ret 	
+
+
+# Funkcja generująca losową 128 bitową liczbę pod wskazanym adresem.
+# W RDI przyjmuje adres gdzie ma sie znajdowac wygenerowana liczba
+#
+# C: _unsigned __128bit* GenRanNumber(unsigned __128bit * iDest)
+# MODYFIKUJE REJESTRY: RDI, R8, RCX, R10, RAX 
+ 
+
+.type GenRanNumber, @function 
+GenRanNumber: 
+	push %rbp
+	mov %rsp, %rbp
+	sub $16, %rsp 
+	
+	# time(NULL);
+	# srand(time(NULL)); 
+	mov %rdi, -16(%rbp) 
+	xor %rdi, %rdi 	# Przekazanie NULL jako parametru
+	call time 	# generowanie ziarna time(NULL);
+	mov %rax, %rdi  # przerzucenie time(NULL) jako parametr
+	call srand	# wywolanie srand(time(NULL))
+	xor %rax, %rax  # zerowanie rax 
+	call rand	# wywolanie rand();
+
+ 	xor %rcx, %rcx 
+	xor %r10, %r10 
+_GenRand_loop: 
+	mov %r10, %rcx 	
+	cmp $4, %rcx 
+	je _GenRand_out 
+	movq -16(%rbp), %r8	
+	movq %rax, (%r8, %rcx, 4);
+	int3 
+	inc %rcx 
+	mov %rcx, %r10 
+	call rand 
+	jmp _GenRand_loop 
+_GenRand_out:
+	mov -16(%rbp), %rax 
+	mov %rbp, %rsp 
+	pop %rbp 
+	ret 
+
+
+# Wyprowadz z podanej liczby z pSrc najblizsza, 128bitowa liczbe
+# pierwsza i zachowaj ja pod pSrc 
+#
+# C: void MakePrime(unsigned __128bit* pSrc)
+# MODYFIKUJE RERJESTRY: 
+
+.type MakePrime, @function
+MakePrime: 
+	push %rbp 
+	mov %rsp, %rbp
+
+	#liczenie maksymalnej potegi dwojki dzielaca n-1
+	#pobranie liczby do rejestrow r8 i r9
+	xorq %rcx,%rcx
+	movq (%rdi,%rcx,8),%r8
+	incq %rcx
+	movq (%rdi,%rcx,8),%r9
+	decq %r9 #n-1
+
+	movq %r8,%r14	#kopia n-1 do r14 i r15
+	movq %r9,%r15
+
+
+	movq $1,%r10 #r10 do przechowania poteg dwojki,liczba s
+	movq %r8,%rdi #parametr b w a mod b jest staly i przekazany przez 2 rejestry
+        movq %r9,%rsi
+	xorq %rdx,%rdx #starsze bity drugiego parametru zerowe
+	xorq %rcx,%rcx
+
+	loop:
+	shlq %r10 #s*2
+	movq %r10,%rcx #mlodsze bity drugiego parametru jako liczba s
+	call __umodti3@PLT #wynik n-1 mod 2^s w rax
+	incq %rcx #licznik
+	cmpq $0,%rax #sprawdzenie czy wynik n-1 mod s to 0
+	je loop
+	#liczba s w r10
+	movq %r10,%r11 #kopia liczby s do r11
+
+	#oblicznie d
+	movq %rcx,%r10
+	xorq %rdx,%rdx
+	movq (%rdi,%rdx,1),%r8
+	incq %rdx
+	movq (%rdi,%rdx,1),%r9
+	loop2:
+	shrdq $1,%r8,%r9
+	shrq %r8
+	decq %r10
+	cmpq $0,%r10
+	jg loop2
+	#liczba d w r8 i r9
+
+	#a = 2 3 5 7 11 13 17 19 23 29 31 37 41
+	xorq %r8,%r8 #w r8 bedzie liczba r
+	decq %r11 #s-1
+	movq $1,%rbx #w rbx bedzie 2^r
+	loop3:
+	movq %r8,%rcx #kopia liczby r do rcx licznik do przesuniec
+	cmpq %r8,%r11
+	jle label
+	incq %r8 #zwiekszenie r 
+	jg loop3
+
+	movq $2,%rdi #pierwsze a = 2 jako pierwszy parametr powModulo
+	
+
+	mov %rbp, %rsp 
+	pop %rbp 
+	ret
+
+	label:
+	# r9 liczba d
+	xorq %r12,%r12
+	shldq $1,%r8,%r9
+	sal %r8
+	decq %rcx
+	cmpq $0,%rcx
+	jg label
+
+	#wywolanie powModulo
+	movq $2,%rdi #liczba a jako 1 parametr
+	movq %r8,%rsi
+	movq %r9,%rdx
+	movq %r14,%rcx
+	movq %r15,%r8
+	call powModulo
+	#wynik w rax mlodsze w rdx starsze
+	cmpq %rdx,%r14
+	je equal
+	jne loop3
+
+	equal:
+	cmpq %rax,%r15
+	je found
+	jne loop3
+
+
+.globl main 
+main:
+	push %rbp
+	mov %rsp, %rbp
+	sub $32, %rsp
+ 
+	movb $'%', -23(%rbp) 
+	movb $'s', -22(%rbp)
+	movb $0, -21(%rbp) 
+	lea -8(%rbp), %rdi 
+
+	mov $LOC, %rsi 	
+	call scanf 
+
+
+	mov $LOC, %rdi   
+	call GenerateTAR
+
+	movq $0, -24(%rbp)
+	movq $0, -32(%rbp)
+	lea -24(%rbp), %rdi 
+	int3
+	call GenRanNumber 
+	int3
+	xor %rax, %rax 
+	mov %rbp, %rsp 
+	pop %rbp 
+	ret  

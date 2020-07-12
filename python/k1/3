@@ -1,0 +1,3 @@
+mfdkm3435mkgkmbath) :
+        if os.access(filepath, os.X_OK) == False :
+            os.remove(filepath)

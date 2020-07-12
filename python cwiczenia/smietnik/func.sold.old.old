@@ -1,0 +1,85 @@
+
+# Wywołanie TARa do wygenerowania archiwumz z lokalizacji źródłowej w RDI 
+#
+# C: void GenerateArhive(char* szSource)
+# MODYFIKUJE REJESTRY: RSI, RAX, RDI, RSI  
+.globl GenerateTAR 
+.type GenerateTAR, @function
+GenerateTAR: 
+	push %rbp 
+	mov %rsp, %rbp 
+	mov %rdi, -16(%rbp)
+	sub $16, %rsp 	
+
+	call strlen 
+	
+	add $16, %rax
+	call malloc 
+	
+	mov %rax, %rdi   
+	mov $TAR_PROTOTYPE, %rsi 
+	call strcpy
+	
+
+	mov %rax, %rdi 
+	movq -16(%rbp), %rsi 
+	call strcat 
+
+	mov %rax, -16(%rbp)
+	mov %rax, %rdi 
+	call system 
+	mov -16(%rbp), %rdi 
+	call free
+
+	mov %rbp, %rsp 
+	pop %rbp 
+	ret 	
+
+
+# Funkcja generująca losową 128 bitową liczbę pod wskazanym adresem.
+# W RDI przyjmuje adres gdzie ma sie znajdowac wygenerowana liczba
+#
+# C: _unsigned __128bit* GenRanNumber(unsigned __128bit * iDest)
+# MODYFIKUJE REJESTRY: RDI, R8, RCX, R10, RAX 
+ 
+.globl GenRanNumber 
+.type GenRanNumber, @function 
+GenRanNumber: 
+	push %rbp
+	mov %rsp, %rbp
+	sub $16, %rsp 
+	
+	# time(NULL);
+	# srand(time(NULL)); 
+	mov %rdi, -16(%rbp) 
+	xor %rdi, %rdi 	# Przekazanie NULL jako parametru
+	call time 	# generowanie ziarna time(NULL);
+	mov %rax, %rdi  # przerzucenie time(NULL) jako parametr
+	call srand	# wywolanie srand(time(NULL))
+	xor %rax, %rax  # zerowanie rax 
+	call rand	# wywolanie rand();
+
+ 	xor %rcx, %rcx 
+	xor %r10, %r10 
+_GenRand_loop: 
+	mov %r10, %rcx 	
+	cmp $4, %rcx 
+	je _GenRand_out 
+	movq -16(%rbp), %r8	
+	movq %rax, (%r8, %rcx, 4);
+	int3 
+	inc %rcx 
+	mov %rcx, %r10 
+	call rand 
+	jmp _GenRand_loop 
+	
+	mov -16(%rbp), %rax 
+	movq (%rax), %rax 
+	int3 
+_GenRand_out:
+	mov -16(%rbp), %rax 
+	mov %rbp, %rsp 
+	pop %rbp 
+	ret 
+
+
